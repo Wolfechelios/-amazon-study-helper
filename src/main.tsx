@@ -35,25 +35,32 @@ function App() {
   const [pick, setPick] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [missed, setMissed] = useState<string[]>([]);
+  const [history, setHistory] = useState<string[]>(() => JSON.parse(localStorage.getItem("studyHistory") || "[]"));
   const [notes, setNotes] = useState(() => localStorage.getItem("weakNotes") || defaults);
   const [mode, setMode] = useState<"all" | "technical" | "behavioral">("all");
 
   useEffect(() => localStorage.setItem("weakNotes", notes), [notes]);
+  useEffect(() => localStorage.setItem("studyHistory", JSON.stringify(history)), [history]);
 
   const pool = bank.filter(q => mode === "all" || (mode === "technical" ? !["Behavioral", "Leadership", "Communication", "Customer Impact"].includes(q.area) : ["Behavioral", "Leadership", "Communication", "Customer Impact"].includes(q.area)));
   const deck = useMemo(() => shuffle(pool), [round, mode]);
   const q = deck[i] || deck[0];
   const done = pick !== null;
   const final = done && i === deck.length - 1;
+  const readiness = Math.round(((score / Math.max(1, i + Number(done))) * 55) + (Math.max(0, 10 - missed.length) * 3) + (history.length > 0 ? 15 : 0));
+  const topWeak = missed[0] || history[history.length - 1] || "Start with CPU triage, STAR stories, and ticket documentation.";
+  const coach = readiness >= 85 ? "Interview-ready range. Focus on speaking clearly and giving measured results." : readiness >= 65 ? "Good foundation. Drill missed areas and turn each answer into STAR format." : "Needs targeted practice. Use Technical Only, then save missed topics into notes.";
 
-  function answer(n: number) { if (done) return; setPick(n); if (n === q.correct) setScore(s => s + 1); else if (!missed.includes(q.weak)) setMissed(m => [...m, q.weak]); }
+  function answer(n: number) { if (done) return; setPick(n); if (n === q.correct) setScore(s => s + 1); else { if (!missed.includes(q.weak)) setMissed(m => [...m, q.weak]); setHistory(h => [...h.slice(-10), q.weak]); } }
   function next() { if (i < deck.length - 1) { setI(i + 1); setPick(null); } }
   function restart(nextMode = mode) { setMode(nextMode); setRound(r => r + 1); setI(0); setPick(null); setScore(0); setMissed([]); }
   function addMissesToNotes() { const add = missed.length ? "\n\nMissed today:\n- " + missed.join("\n- ") : "\n\nNo missed areas yet."; setNotes(n => n + add); }
   function saveStar(text: string) { setNotes(n => n + "\n\nSTAR answer:\n" + text); }
+  function startWeakDrill() { setMode("technical"); setRound(r => r + 1); setI(0); setPick(null); setScore(0); }
 
   return <main className="app-shell">
-    <header className="course-header"><div><p className="eyebrow">AWS Interview Preparation</p><h1>Data Center Operations Study Console</h1><p>Formal practice for technical troubleshooting, operational process, safety judgement, ticket discipline, and STAR interview responses.</p></div><div className="score-card"><span>Current Progress</span><strong>{score}/{deck.length}</strong><small>{mode} module</small></div></header>
+    <header className="course-header"><div><p className="eyebrow">AWS Interview Preparation</p><h1>Data Center Operations Study Console</h1><p>Formal practice for technical troubleshooting, operational process, safety judgement, ticket discipline, and STAR interview responses.</p></div><div className="score-card"><span>Readiness Score</span><strong>{Math.min(100, readiness)}%</strong><small>{mode} module</small></div></header>
+    <section className="coach-panel"><div><div className="section-label">Adaptive Coach</div><h2>{coach}</h2><p><b>Next best topic:</b> {topWeak}</p></div><button onClick={startWeakDrill}>Start Focus Drill</button></section>
     <section className="objectives"><article><span>01</span><h3>Technical Readiness</h3><p>Answer host, server, cooling, and network questions with a clear troubleshooting order.</p></article><article><span>02</span><h3>Interview Structure</h3><p>Use the STAR method to keep responses specific, concise, and outcome-based.</p></article><article><span>03</span><h3>Weak Area Review</h3><p>Track missed topics and build a focused study list before the interview.</p></article></section>
     <section className="star-card"><div className="section-label">Response Framework</div><h2>STAR Answer Builder</h2><p>{starGuide}</p><div className="star-grid">{starExamples.map(ex => <article key={ex.title}><h3>{ex.title}</h3><p>{ex.text}</p><button onClick={() => saveStar(ex.text)}>Save to Notes</button></article>)}</div></section>
     <section className="mode-row"><button onClick={() => restart("all")}>All Modules</button><button onClick={() => restart("technical")}>Technical Only</button><button onClick={() => restart("behavioral")}>Behavioral Only</button></section>
