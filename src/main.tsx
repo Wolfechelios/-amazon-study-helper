@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { starExamples, starGuide } from "./starExamples";
 import "./styles.css";
@@ -28,6 +28,7 @@ const bank: Q[] = [
 
 const defaults = "Weak areas to drill:\n- CPU triage: top, htop, load average, vmstat\n- Disk I/O: iostat, iotop, latency, utilization\n- Network links: Layer 1 first, counters, optics, far end\n- STAR stories: mistake, pressure, learning fast, ownership\n- Tickets: symptom, checks, action, validation, next step";
 function shuffle<T>(x: T[]) { return [...x].sort(() => Math.random() - 0.5); }
+function getHistory() { try { return JSON.parse(localStorage.getItem("studyHistory") || "[]"); } catch { return []; } }
 
 function App() {
   const [round, setRound] = useState(0);
@@ -35,9 +36,11 @@ function App() {
   const [pick, setPick] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [missed, setMissed] = useState<string[]>([]);
-  const [history, setHistory] = useState<string[]>(() => JSON.parse(localStorage.getItem("studyHistory") || "[]"));
+  const [history, setHistory] = useState<string[]>(getHistory);
   const [notes, setNotes] = useState(() => localStorage.getItem("weakNotes") || defaults);
   const [mode, setMode] = useState<"all" | "technical" | "behavioral">("all");
+  const [savedNotice, setSavedNotice] = useState("");
+  const notesRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => localStorage.setItem("weakNotes", notes), [notes]);
   useEffect(() => localStorage.setItem("studyHistory", JSON.stringify(history)), [history]);
@@ -54,18 +57,21 @@ function App() {
   function answer(n: number) { if (done) return; setPick(n); if (n === q.correct) setScore(s => s + 1); else { if (!missed.includes(q.weak)) setMissed(m => [...m, q.weak]); setHistory(h => [...h.slice(-10), q.weak]); } }
   function next() { if (i < deck.length - 1) { setI(i + 1); setPick(null); } }
   function restart(nextMode = mode) { setMode(nextMode); setRound(r => r + 1); setI(0); setPick(null); setScore(0); setMissed([]); }
-  function addMissesToNotes() { const add = missed.length ? "\n\nMissed today:\n- " + missed.join("\n- ") : "\n\nNo missed areas yet."; setNotes(n => n + add); }
-  function saveStar(text: string) { setNotes(n => n + "\n\nSTAR answer:\n" + text); }
+  function appendToNotes(label: string, text: string) { const entry = "\n\n" + label + "\n" + text; setNotes(n => { const updated = n + entry; localStorage.setItem("weakNotes", updated); return updated; }); setSavedNotice("Saved to notes: " + label.replace(/:$/, "")); setTimeout(() => setSavedNotice(""), 2200); setTimeout(() => notesRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50); }
+  function addMissesToNotes() { appendToNotes("Missed today:", missed.length ? "- " + missed.join("\n- ") : "No missed areas yet."); }
+  function saveStar(title: string, text: string) { appendToNotes("STAR answer - " + title + ":", text); }
+  function saveCurrentQuestion() { appendToNotes("Question review - " + q.weak + ":", "Question: " + q.prompt + "\nAnswer pattern: " + q.note); }
   function startWeakDrill() { setMode("technical"); setRound(r => r + 1); setI(0); setPick(null); setScore(0); }
 
   return <main className="app-shell">
     <header className="course-header"><div><p className="eyebrow">AWS Interview Preparation</p><h1>Data Center Operations Study Console</h1><p>Formal practice for technical troubleshooting, operational process, safety judgement, ticket discipline, and STAR interview responses.</p></div><div className="score-card"><span>Readiness Score</span><strong>{Math.min(100, readiness)}%</strong><small>{mode} module</small></div></header>
+    {savedNotice && <div className="saved-banner">{savedNotice}</div>}
     <section className="coach-panel"><div><div className="section-label">Adaptive Coach</div><h2>{coach}</h2><p><b>Next best topic:</b> {topWeak}</p></div><button onClick={startWeakDrill}>Start Focus Drill</button></section>
     <section className="objectives"><article><span>01</span><h3>Technical Readiness</h3><p>Answer host, server, cooling, and network questions with a clear troubleshooting order.</p></article><article><span>02</span><h3>Interview Structure</h3><p>Use the STAR method to keep responses specific, concise, and outcome-based.</p></article><article><span>03</span><h3>Weak Area Review</h3><p>Track missed topics and build a focused study list before the interview.</p></article></section>
-    <section className="star-card"><div className="section-label">Response Framework</div><h2>STAR Answer Builder</h2><p>{starGuide}</p><div className="star-grid">{starExamples.map(ex => <article key={ex.title}><h3>{ex.title}</h3><p>{ex.text}</p><button onClick={() => saveStar(ex.text)}>Save to Notes</button></article>)}</div></section>
+    <section className="star-card"><div className="section-label">Response Framework</div><h2>STAR Answer Builder</h2><p>{starGuide}</p><div className="star-grid">{starExamples.map(ex => <article key={ex.title}><h3>{ex.title}</h3><p>{ex.text}</p><button onClick={() => saveStar(ex.title, ex.text)}>Save to Notes</button></article>)}</div></section>
     <section className="mode-row"><button onClick={() => restart("all")}>All Modules</button><button onClick={() => restart("technical")}>Technical Only</button><button onClick={() => restart("behavioral")}>Behavioral Only</button></section>
-    <section className="game-card"><div className="section-label">Knowledge Check</div><div className="area-row"><span>{q.area}</span><span>Question {i + 1} of {deck.length}</span></div><div className="progress"><div style={{ width: `${((i + Number(done)) / deck.length) * 100}%` }} /></div><h2>{q.prompt}</h2><div className="choices">{q.answers.map((a, n) => { let c = "choice"; if (done && n === q.correct) c += " correct"; if (done && n === pick && n !== q.correct) c += " wrong"; return <button className={c} key={a} onClick={() => answer(n)}><span>{String.fromCharCode(65+n)}</span>{a}</button>; })}</div>{done && <div className="explain"><strong>{pick === q.correct ? "Correct." : "Review this."}</strong> {q.note}<br/><b>Weak tag:</b> {q.weak}</div>}<div className="actions"><button className="ghost" onClick={() => restart()}>Restart Module</button><button onClick={next} disabled={!done || final}>{final ? "Module Complete" : "Next Question"}</button></div></section>
-    <section className="notes-card"><div className="section-label">Personal Study Notes</div><div><h2>Weak-Area Notes</h2><p>Use this section as your interview preparation worksheet. Notes save in this browser.</p></div><textarea value={notes} onChange={e => setNotes(e.target.value)} /><div className="actions"><button className="ghost" onClick={() => setNotes(defaults)}>Reset Notes</button><button onClick={addMissesToNotes}>Add Missed Areas</button></div>{missed.length > 0 && <div className="missed"><strong>Missed this round:</strong> {missed.join(", ")}</div>}</section>
+    <section className="game-card"><div className="section-label">Knowledge Check</div><div className="area-row"><span>{q.area}</span><span>Question {i + 1} of {deck.length}</span></div><div className="progress"><div style={{ width: `${((i + Number(done)) / deck.length) * 100}%` }} /></div><h2>{q.prompt}</h2><div className="choices">{q.answers.map((a, n) => { let c = "choice"; if (done && n === q.correct) c += " correct"; if (done && n === pick && n !== q.correct) c += " wrong"; return <button className={c} key={a} onClick={() => answer(n)}><span>{String.fromCharCode(65+n)}</span>{a}</button>; })}</div>{done && <div className="explain"><strong>{pick === q.correct ? "Correct." : "Review this."}</strong> {q.note}<br/><b>Weak tag:</b> {q.weak}</div>}<div className="actions"><button className="ghost" onClick={() => restart()}>Restart Module</button><button className="ghost" onClick={saveCurrentQuestion}>Save Current Question</button><button onClick={next} disabled={!done || final}>{final ? "Module Complete" : "Next Question"}</button></div></section>
+    <section className="notes-card"><div className="section-label">Personal Study Notes</div><div><h2>Weak-Area Notes</h2><p>Use this section as your interview preparation worksheet. Notes save in this browser.</p></div><textarea ref={notesRef} value={notes} onChange={e => setNotes(e.target.value)} /><div className="actions"><button className="ghost" onClick={() => setNotes(defaults)}>Reset Notes</button><button onClick={addMissesToNotes}>Add Missed Areas</button></div>{missed.length > 0 && <div className="missed"><strong>Missed this round:</strong> {missed.join(", ")}</div>}</section>
   </main>;
 }
 
