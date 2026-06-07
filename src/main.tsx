@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { starExamples, starGuide } from "./starExamples";
 import "./styles.css";
 
 type Q = { area: string; prompt: string; answers: string[]; correct: number; note: string; weak: string };
@@ -45,21 +46,15 @@ function App() {
   const done = pick !== null;
   const final = done && i === deck.length - 1;
 
-  function answer(n: number) {
-    if (done) return;
-    setPick(n);
-    if (n === q.correct) setScore(s => s + 1);
-    else if (!missed.includes(q.weak)) setMissed(m => [...m, q.weak]);
-  }
+  function answer(n: number) { if (done) return; setPick(n); if (n === q.correct) setScore(s => s + 1); else if (!missed.includes(q.weak)) setMissed(m => [...m, q.weak]); }
   function next() { if (i < deck.length - 1) { setI(i + 1); setPick(null); } }
   function restart(nextMode = mode) { setMode(nextMode); setRound(r => r + 1); setI(0); setPick(null); setScore(0); setMissed([]); }
-  function addMissesToNotes() {
-    const add = missed.length ? "\n\nMissed today:\n- " + missed.join("\n- ") : "\n\nNo missed areas yet.";
-    setNotes(n => n + add);
-  }
+  function addMissesToNotes() { const add = missed.length ? "\n\nMissed today:\n- " + missed.join("\n- ") : "\n\nNo missed areas yet."; setNotes(n => n + add); }
+  function saveStar(text: string) { setNotes(n => n + "\n\nSTAR answer:\n" + text); }
 
   return <main className="app-shell">
-    <section className="hero"><div><p className="eyebrow">Interview Ready Drill</p><h1>AWS Data Center Ops Prep</h1><p>Practice technical answers, interview wording, process thinking, safety, ownership, and weak-area notes.</p></div><div className="score-card"><span>Score</span><strong>{score}/{deck.length}</strong><small>{mode} mode</small></div></section>
+    <section className="hero"><div><p className="eyebrow">Interview Ready Drill</p><h1>AWS Data Center Ops Prep</h1><p>Practice technical answers, STAR wording, process thinking, safety, ownership, and weak-area notes.</p></div><div className="score-card"><span>Score</span><strong>{score}/{deck.length}</strong><small>{mode} mode</small></div></section>
+    <section className="star-card"><h2>STAR Answer Builder</h2><p>{starGuide}</p><div className="star-grid">{starExamples.map(ex => <article key={ex.title}><h3>{ex.title}</h3><p>{ex.text}</p><button onClick={() => saveStar(ex.text)}>Save to Notes</button></article>)}</div></section>
     <section className="mode-row"><button onClick={() => restart("all")}>All</button><button onClick={() => restart("technical")}>Technical</button><button onClick={() => restart("behavioral")}>Behavioral</button></section>
     <section className="game-card"><div className="area-row"><span>{q.area}</span><span>Question {i + 1} of {deck.length}</span></div><div className="progress"><div style={{ width: `${((i + Number(done)) / deck.length) * 100}%` }} /></div><h2>{q.prompt}</h2><div className="choices">{q.answers.map((a, n) => { let c = "choice"; if (done && n === q.correct) c += " correct"; if (done && n === pick && n !== q.correct) c += " wrong"; return <button className={c} key={a} onClick={() => answer(n)}><span>{String.fromCharCode(65+n)}</span>{a}</button>; })}</div>{done && <div className="explain"><strong>{pick === q.correct ? "Correct." : "Missed."}</strong> {q.note}<br/><b>Weak tag:</b> {q.weak}</div>}<div className="actions"><button className="ghost" onClick={() => restart()}>Restart</button><button onClick={next} disabled={!done || final}>{final ? "Round complete" : "Next"}</button></div></section>
     <section className="notes-card"><div><h2>Weak-Area Notes</h2><p>Use this before the interview. It saves on this browser.</p></div><textarea value={notes} onChange={e => setNotes(e.target.value)} /><div className="actions"><button className="ghost" onClick={() => setNotes(defaults)}>Reset Notes</button><button onClick={addMissesToNotes}>Add Missed Areas</button></div>{missed.length > 0 && <div className="missed"><strong>Missed this round:</strong> {missed.join(", ")}</div>}</section>
