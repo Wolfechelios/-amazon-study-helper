@@ -55,7 +55,7 @@ h1 {
 }
 p { color: var(--muted); line-height: 1.6; }
 .course-header p:last-child { max-width: 780px; font-size: 18px; }
-.score-card, .game-card, .notes-card, .star-card, .objectives article {
+.score-card, .game-card, .notes-card, .star-card, .objectives article, .coach-panel {
   border: 1px solid var(--line);
   background: var(--panel);
   box-shadow: 0 10px 24px rgba(22, 34, 56, 0.06);
@@ -69,6 +69,29 @@ p { color: var(--muted); line-height: 1.6; }
 }
 .score-card span, .score-card small, .area-row { color: var(--muted); }
 .score-card strong { font-size: 40px; color: var(--navy); }
+.coach-panel {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 20px;
+  align-items: center;
+  padding: 24px;
+  margin-bottom: 20px;
+  border-radius: 18px;
+  border-left: 6px solid var(--accent);
+  background: #fffdf8;
+}
+.coach-panel h2 { margin-bottom: 8px; font-size: clamp(22px, 3vw, 32px); }
+.coach-panel p { margin: 0; }
+.coach-panel button {
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 18px;
+  background: var(--navy);
+  color: #ffffff;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
 .objectives {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -227,6 +250,7 @@ h2 {
 .notes-card h2 { margin-bottom: 8px; }
 .notes-card p { margin-top: 0; }
 @media (max-width: 860px) {
-  .course-header, .objectives, .star-grid { grid-template-columns: 1fr; }
+  .course-header, .objectives, .star-grid, .coach-panel { grid-template-columns: 1fr; }
   .score-card { min-width: 0; }
+  .coach-panel button { width: 100%; }
 }
