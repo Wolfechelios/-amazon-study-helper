@@ -37,6 +37,20 @@ button { font: inherit; }
   background: linear-gradient(180deg, #ffffff, #f8fafc);
   box-shadow: 0 12px 28px rgba(22, 34, 56, 0.08);
 }
+.saved-banner {
+  position: sticky;
+  top: 12px;
+  z-index: 20;
+  margin-bottom: 16px;
+  border: 1px solid #b7e0c2;
+  border-left: 6px solid var(--success);
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: #f0fdf4;
+  color: #14532d;
+  font-weight: 900;
+  box-shadow: 0 12px 24px rgba(15, 122, 59, 0.12);
+}
 .eyebrow, .section-label {
   margin: 0 0 10px;
   color: var(--accent);
