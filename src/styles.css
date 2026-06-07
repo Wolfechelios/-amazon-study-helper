@@ -33,7 +33,7 @@ h1 {
 }
 p { color: #b8c3d9; line-height: 1.55; }
 .hero p:last-child { max-width: 760px; font-size: 18px; }
-.score-card, .game-card, .notes-card {
+.score-card, .game-card, .notes-card, .star-card {
   border: 1px solid rgba(255,255,255,0.12);
   background: #111827;
   box-shadow: 0 22px 60px rgba(0,0,0,0.28);
@@ -53,7 +53,7 @@ p { color: #b8c3d9; line-height: 1.55; }
   flex-wrap: wrap;
   margin: 0 0 18px;
 }
-.mode-row button {
+.mode-row button, .star-card button {
   border: 1px solid #334155;
   border-radius: 999px;
   padding: 10px 16px;
@@ -62,12 +62,26 @@ p { color: #b8c3d9; line-height: 1.55; }
   font-weight: 800;
   cursor: pointer;
 }
-.mode-row button:hover { border-color: #ff9900; }
-.game-card, .notes-card {
+.mode-row button:hover, .star-card button:hover { border-color: #ff9900; }
+.game-card, .notes-card, .star-card {
   border-radius: 28px;
   padding: clamp(22px, 4vw, 38px);
   margin-bottom: 20px;
 }
+.star-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+.star-grid article {
+  border: 1px solid #334155;
+  border-radius: 18px;
+  background: #0f172a;
+  padding: 16px;
+}
+.star-grid h3 { margin: 0 0 8px; color: #ff9900; }
+.star-grid p { margin: 0 0 14px; }
 .area-row {
   display: flex;
   justify-content: space-between;
@@ -154,4 +168,4 @@ h2 { margin: 0 0 22px; font-size: clamp(24px, 4vw, 40px); }
 .notes-card textarea:focus { border-color: #ff9900; }
 .notes-card h2 { margin-bottom: 8px; }
 .notes-card p { margin-top: 0; }
-@media (max-width: 760px) { .hero { grid-template-columns: 1fr; } .score-card { min-width: 0; } }
+@media (max-width: 760px) { .hero, .star-grid { grid-template-columns: 1fr; } .score-card { min-width: 0; } }
