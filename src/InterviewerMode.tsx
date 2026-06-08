@@ -23,6 +23,7 @@ type InterviewRecord = {
   answer: string;
   score: number;
   feedback: ReturnType<typeof gradeAnswer>;
+  gradeKey?: string;
 };
 
 const roles: RoleTarget[] = [
@@ -116,6 +117,24 @@ function scorePart(answer: string, words: string[]) {
   return words.some(word => lower.includes(word));
 }
 
+function normalizeAnswer(answer: string) {
+  return answer.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function makeGradeKey(input: { mode: InterviewMode; role: RoleTarget; pressure: boolean; question: string; answer: string }) {
+  return JSON.stringify({
+    mode: input.mode,
+    role: input.role,
+    pressure: input.pressure,
+    question: input.question,
+    answer: normalizeAnswer(input.answer),
+  });
+}
+
+function getRecordGradeKey(record: InterviewRecord) {
+  return record.gradeKey || makeGradeKey(record);
+}
+
 function gradeAnswer(answer: string, q: InterviewQuestion, pressure: boolean) {
   const lower = answer.toLowerCase();
   const wordCount = answer.trim().split(/\s+/).filter(Boolean).length;
@@ -148,6 +167,7 @@ export function InterviewerMode() {
   const [answer, setAnswer] = useState("");
   const [records, setRecords] = useState<InterviewRecord[]>(loadHistory);
   const [activeRecord, setActiveRecord] = useState<InterviewRecord | null>(null);
+  const [lastGradeKey, setLastGradeKey] = useState("");
 
   useEffect(() => localStorage.setItem("interviewerHistory", JSON.stringify(records.slice(-50))), [records]);
 
@@ -158,26 +178,42 @@ export function InterviewerMode() {
   }, [mode, role]);
 
   const q = deck[index % Math.max(1, deck.length)] || questions[0];
+  const currentGradeKey = answer.trim() ? makeGradeKey({ mode, role, pressure, question: q.prompt, answer }) : "";
+  const alreadyGradedCurrentAnswer = Boolean(currentGradeKey && currentGradeKey === lastGradeKey && activeRecord);
   const average = records.length ? Math.round((records.reduce((sum, item) => sum + item.score, 0) / records.length) * 10) / 10 : 0;
   const weakAreas = records.flatMap(item => item.feedback.missing).slice(-8);
 
   function submitAnswer() {
     if (!answer.trim()) return;
+
+    const gradeKey = makeGradeKey({ mode, role, pressure, question: q.prompt, answer });
     const feedback = gradeAnswer(answer, q, pressure);
-    const record: InterviewRecord = { at: new Date().toISOString(), mode, role, pressure, question: q.prompt, answer, score: feedback.score, feedback };
+    const record: InterviewRecord = { at: new Date().toISOString(), mode, role, pressure, question: q.prompt, answer, score: feedback.score, feedback, gradeKey };
+
     setActiveRecord(record);
-    setRecords(prev => [...prev.slice(-49), record]);
+    setLastGradeKey(gradeKey);
+
+    setRecords(prev => {
+      const existingIndex = prev.findIndex(item => getRecordGradeKey(item) === gradeKey);
+      if (existingIndex === -1) return [...prev.slice(-49), record];
+
+      const updated = [...prev];
+      updated[existingIndex] = record;
+      return updated.slice(-50);
+    });
   }
 
   function nextQuestion() {
     setAnswer("");
     setActiveRecord(null);
+    setLastGradeKey("");
     setIndex(i => i + 1);
   }
 
   function resetSession() {
     setAnswer("");
     setActiveRecord(null);
+    setLastGradeKey("");
     setIndex(0);
   }
 
@@ -194,15 +230,15 @@ export function InterviewerMode() {
     <div className="interviewer-controls">
       <label>Interview Type<select value={mode} onChange={e => { setMode(e.target.value as InterviewMode); resetSession(); }}>{Object.entries(modeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
       <label>Target Role<select value={role} onChange={e => { setRole(e.target.value as RoleTarget); resetSession(); }}>{roles.map(item => <option key={item}>{item}</option>)}</select></label>
-      <label className="pressure-toggle"><input type="checkbox" checked={pressure} onChange={e => setPressure(e.target.checked)} /> Amazon Pressure Mode</label>
+      <label className="pressure-toggle"><input type="checkbox" checked={pressure} onChange={e => { setPressure(e.target.checked); setActiveRecord(null); setLastGradeKey(""); }} /> Amazon Pressure Mode</label>
     </div>
 
     <div className="interviewer-question">
       <div className="answer-top"><span>{modeLabels[mode]}</span><b>{role}</b></div>
       <h3>Interviewer: {q.prompt}</h3>
       {pressure && <p className="pressure-line">Pressure mode active: vague answers will get pushed for exact actions, readings, ownership, and result.</p>}
-      <textarea value={answer} onChange={e => setAnswer(e.target.value)} placeholder="Type your answer in STAR format: Situation, Task, Action, Result. Include tools, readings, safety steps, communication, and measurable outcome." />
-      <div className="actions"><button className="ghost" onClick={resetSession}>Reset Session</button><button onClick={submitAnswer}>Grade Answer</button></div>
+      <textarea value={answer} onChange={e => { setAnswer(e.target.value); if (activeRecord) { setActiveRecord(null); setLastGradeKey(""); } }} placeholder="Type your answer in STAR format: Situation, Task, Action, Result. Include tools, readings, safety steps, communication, and measurable outcome." />
+      <div className="actions"><button className="ghost" onClick={resetSession}>Reset Session</button><button onClick={submitAnswer} disabled={alreadyGradedCurrentAnswer}>{alreadyGradedCurrentAnswer ? "Answer Already Graded" : activeRecord ? "Re-grade Answer" : "Grade Answer"}</button></div>
     </div>
 
     {activeRecord && <div className="interviewer-feedback">
@@ -222,7 +258,7 @@ export function InterviewerMode() {
       <h3>Interview History</h3>
       <p>Saved in this browser: questions, your answers, scores, improved answer guidance, weak areas, and Leadership Principles.</p>
       {weakAreas.length > 0 && <p><b>Areas to drill again:</b> {Array.from(new Set(weakAreas)).join(", ")}</p>}
-      <div className="history-list">{records.slice(-5).reverse().map(item => <article key={item.at}><div className="answer-top"><span>{item.mode}</span><b>{item.score}/5</b></div><h4>{item.question}</h4><p>{item.answer}</p><small>{item.role} · {new Date(item.at).toLocaleString()}</small></article>)}</div>
+      <div className="history-list">{records.slice(-5).reverse().map(item => <article key={item.gradeKey || item.at}><div className="answer-top"><span>{item.mode}</span><b>{item.score}/5</b></div><h4>{item.question}</h4><p>{item.answer}</p><small>{item.role} · {new Date(item.at).toLocaleString()}</small></article>)}</div>
     </div>
   </section>;
 }
