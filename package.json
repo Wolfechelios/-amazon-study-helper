@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "audit:app": "tsx scripts/audit.ts . --out=artifacts/audit-report.json",
+    "audit:routes": "tsx scripts/audit.ts . --modules=routing.empty-values --out=artifacts/audit-routes.json",
+    "audit:ui": "tsx scripts/audit.ts . --modules=ui.black-screen-guards --out=artifacts/audit-ui.json",
+    "audit:security": "tsx scripts/audit.ts . --modules=security.secret-scan --out=artifacts/audit-security.json"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.4",
@@ -18,6 +22,7 @@
   "devDependencies": {
     "@types/node": "^22.16.5",
     "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.0"
+    "@types/react-dom": "^19.2.0",
+    "tsx": "latest"
   }
 }
