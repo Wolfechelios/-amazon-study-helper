@@ -9,6 +9,8 @@
     "preview": "vite preview",
     "audit:app": "tsx scripts/audit.ts . --out=artifacts/audit-report.json",
     "audit:firebreak": "tsx scripts/audit.ts . --modules=firebreak.integrity --out=artifacts/audit-firebreak.json",
+    "audit:runthrough": "tsx scripts/no-man-left-behind-audit.ts",
+    "audit:complete": "npm run build && npm run audit:app && npm run audit:runthrough",
     "audit:routes": "tsx scripts/audit.ts . --modules=routing.empty-values --out=artifacts/audit-routes.json",
     "audit:ui": "tsx scripts/audit.ts . --modules=ui.black-screen-guards --out=artifacts/audit-ui.json",
     "audit:security": "tsx scripts/audit.ts . --modules=security.secret-scan --out=artifacts/audit-security.json"
@@ -24,6 +26,7 @@
     "@types/node": "^22.16.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "playwright": "latest",
     "tsx": "latest"
   }
 }
