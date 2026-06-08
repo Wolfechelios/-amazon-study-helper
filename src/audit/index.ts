@@ -1,6 +1,6 @@
 import { AuditRegistry } from './registry';
 import { runAudits } from './runner';
-import { configAudit, routeAudit, securityAudit, uiAudit } from './modules';
+import { configAudit, firebreakAudit, routeAudit, securityAudit, uiAudit } from './modules';
 
 export * from './types';
 export * from './registry';
@@ -13,7 +13,8 @@ export function createDefaultAuditRegistry(): AuditRegistry {
     .register(configAudit)
     .register(routeAudit)
     .register(uiAudit)
-    .register(securityAudit);
+    .register(securityAudit)
+    .register(firebreakAudit);
 }
 
 export async function runDefaultAudits(rootDir: string, moduleIds?: string[]) {
