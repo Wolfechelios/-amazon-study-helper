@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import "./interviewer.css";
 
 type InterviewMode = "behavioral" | "technical" | "mixed" | "practice" | "mock";
 type RoleTarget = "L3 Engineering Operations Technician" | "L4 Engineering Operations Technician" | "General Amazon Interview" | "Electrical Maintenance Role" | "Data Center Technician Role";
