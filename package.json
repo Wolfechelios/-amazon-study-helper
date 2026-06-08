@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "audit:app": "tsx scripts/audit.ts . --out=artifacts/audit-report.json",
+    "audit:firebreak": "tsx scripts/audit.ts . --modules=firebreak.integrity --out=artifacts/audit-firebreak.json",
     "audit:routes": "tsx scripts/audit.ts . --modules=routing.empty-values --out=artifacts/audit-routes.json",
     "audit:ui": "tsx scripts/audit.ts . --modules=ui.black-screen-guards --out=artifacts/audit-ui.json",
     "audit:security": "tsx scripts/audit.ts . --modules=security.secret-scan --out=artifacts/audit-security.json"
