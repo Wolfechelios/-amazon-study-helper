@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { InterviewerMode } from "./InterviewerMode";
 import { closingQuestions, eotInterviewBank } from "./eotInterviewBank";
 import { eotBestExamples, eotScenarioBank } from "./eotScenarioBank";
 import { starExamples, starGuide } from "./starExamples";
@@ -59,10 +60,24 @@ function App() {
   const topWeak = missed[0] || history[history.length - 1] || "Start with CPU triage, STAR stories, and ticket documentation.";
   const coach = readiness >= 85 ? "Interview-ready range. Focus on speaking clearly and giving measured results." : readiness >= 65 ? "Good foundation. Drill missed areas and turn each answer into STAR format." : "Needs targeted practice. Use Technical Only, then save missed topics into notes.";
 
-  function answer(n: number) { if (done) return; setPick(n); if (n === q.correct) setScore(s => s + 1); else { if (!missed.includes(q.weak)) setMissed(m => [...m, q.weak]); setHistory(h => [...h.slice(-10), q.weak]); } }
+  function answer(n: number) {
+    if (done) return;
+    setPick(n);
+    if (n === q.correct) setScore(s => s + 1);
+    else {
+      if (!missed.includes(q.weak)) setMissed(m => [...m, q.weak]);
+      setHistory(h => [...h.slice(-10), q.weak]);
+    }
+  }
   function next() { if (i < deck.length - 1) { setI(i + 1); setPick(null); } }
   function restart(nextMode = mode) { setMode(nextMode); setRound(r => r + 1); setI(0); setPick(null); setScore(0); setMissed([]); }
-  function appendToNotes(label: string, text: string) { const entry = "\n\n" + label + "\n" + text; setNotes(n => { const updated = n + entry; localStorage.setItem("weakNotes", updated); return updated; }); setSavedNotice("Saved to notes: " + label.replace(/:$/, "")); setTimeout(() => setSavedNotice(""), 2200); setTimeout(() => notesRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50); }
+  function appendToNotes(label: string, text: string) {
+    const entry = "\n\n" + label + "\n" + text;
+    setNotes(n => { const updated = n + entry; localStorage.setItem("weakNotes", updated); return updated; });
+    setSavedNotice("Saved to notes: " + label.replace(/:$/, ""));
+    setTimeout(() => setSavedNotice(""), 2200);
+    setTimeout(() => notesRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+  }
   function addMissesToNotes() { appendToNotes("Missed today:", missed.length ? "- " + missed.join("\n- ") : "No missed areas yet."); }
   function saveStar(title: string, text: string) { appendToNotes("STAR answer - " + title + ":", text); }
   function saveBankAnswer(question: string, answer: string, principles: string) { appendToNotes("EOT interview answer - " + question + ":", answer + "\n\nLeadership Principles: " + principles); }
@@ -73,13 +88,23 @@ function App() {
   function startWeakDrill() { setMode("technical"); setRound(r => r + 1); setI(0); setPick(null); setScore(0); }
 
   return <main className="app-shell">
-    <header className="course-header"><div><p className="eyebrow">AWS Interview Preparation</p><h1>Data Center Operations Study Console</h1><p>Formal practice for technical troubleshooting, operational process, safety judgement, ticket discipline, and STAR interview responses.</p></div><div className="score-card"><span>Readiness Score</span><strong>{Math.min(100, readiness)}%</strong><small>{mode} module</small></div></header>
+    <header className="course-header">
+      <div><p className="eyebrow">AWS Interview Preparation</p><h1>Data Center Operations Study Console</h1><p>Formal practice for technical troubleshooting, operational process, safety judgement, ticket discipline, and STAR interview responses.</p></div>
+      <div className="score-card"><span>Readiness Score</span><strong>{Math.min(100, readiness)}%</strong><small>{mode} module</small></div>
+    </header>
+
     {savedNotice && <div className="saved-banner">{savedNotice}</div>}
     <section className="coach-panel"><div><div className="section-label">Adaptive Coach</div><h2>{coach}</h2><p><b>Next best topic:</b> {topWeak}</p></div><button onClick={startWeakDrill}>Start Focus Drill</button></section>
     <section className="objectives"><article><span>01</span><h3>Technical Readiness</h3><p>Answer host, server, cooling, and network questions with a clear troubleshooting order.</p></article><article><span>02</span><h3>Interview Structure</h3><p>Use the STAR method to keep responses specific, concise, and outcome-based.</p></article><article><span>03</span><h3>Weak Area Review</h3><p>Track missed topics and build a focused study list before the interview.</p></article></section>
+
+    <InterviewerMode />
+
     <section className="answer-bank"><div className="section-label">EOT L3/L4 Interview Bank</div><h2>Role-Specific STAR Answers</h2><p>These are your main interview answer library. Filter by topic, study the answer, then save the ones you need to rehearse.</p><div className="category-row">{categories.map(cat => <button key={cat} className={answerCategory === cat ? "active" : ""} onClick={() => setAnswerCategory(cat)}>{cat}</button>)}</div><div className="answer-list">{visibleAnswers.map(item => <article key={item.id}><div className="answer-top"><span>{item.category}</span><b>#{item.id}</b></div><h3>{item.question}</h3><pre>{item.answer}</pre><p><b>Leadership Principles:</b> {item.principles}</p><button onClick={() => saveBankAnswer(item.question, item.answer, item.principles)}>Save Answer to Notes</button></article>)}</div><div className="closing-box"><h3>Best Questions to Ask Them at the End</h3><ul>{closingQuestions.map(item => <li key={item}>{item}</li>)}</ul><button onClick={saveClosingQuestions}>Save End Questions to Notes</button></div></section>
+
     <section className="scenario-bank"><div className="section-label">Alternate STAR Scenario Bank</div><h2>Extra Real-World Options for Questions 3–10</h2><p>Use these when the main answer does not feel close enough to your real experience. Pick the truest one, then tighten the details before the interview.</p><div className="best-examples"><div><h3>Best for L3</h3><ul>{eotBestExamples.l3.map(item => <li key={item}>{item}</li>)}</ul></div><div><h3>Best for L4</h3><ul>{eotBestExamples.l4.map(item => <li key={item}>{item}</li>)}</ul></div><div><h3>Best sentence</h3><p>{eotBestExamples.sentence}</p><button onClick={saveBestExamples}>Save Best Examples</button></div></div><div className="scenario-list">{eotScenarioBank.map(item => <article key={item.questionId + item.title}><div className="answer-top"><span>Question {item.questionId}</span><b>{item.levelFit}</b></div><h3>{item.title}</h3><pre>{item.text}</pre><button onClick={() => saveScenario(item.title, item.text, item.levelFit)}>Save Scenario to Notes</button></article>)}</div></section>
+
     <section className="star-card"><div className="section-label">Response Framework</div><h2>STAR Answer Builder</h2><p>{starGuide}</p><div className="star-grid">{starExamples.map(ex => <article key={ex.title}><h3>{ex.title}</h3><p>{ex.text}</p><button onClick={() => saveStar(ex.title, ex.text)}>Save to Notes</button></article>)}</div></section>
+
     <section className="mode-row"><button onClick={() => restart("all")}>All Modules</button><button onClick={() => restart("technical")}>Technical Only</button><button onClick={() => restart("behavioral")}>Behavioral Only</button></section>
     <section className="game-card"><div className="section-label">Knowledge Check</div><div className="area-row"><span>{q.area}</span><span>Question {i + 1} of {deck.length}</span></div><div className="progress"><div style={{ width: `${((i + Number(done)) / deck.length) * 100}%` }} /></div><h2>{q.prompt}</h2><div className="choices">{q.answers.map((a, n) => { let c = "choice"; if (done && n === q.correct) c += " correct"; if (done && n === pick && n !== q.correct) c += " wrong"; return <button className={c} key={a} onClick={() => answer(n)}><span>{String.fromCharCode(65+n)}</span>{a}</button>; })}</div>{done && <div className="explain"><strong>{pick === q.correct ? "Correct." : "Review this."}</strong> {q.note}<br/><b>Weak tag:</b> {q.weak}</div>}<div className="actions"><button className="ghost" onClick={() => restart()}>Restart Module</button><button className="ghost" onClick={saveCurrentQuestion}>Save Current Question</button><button onClick={next} disabled={!done || final}>{final ? "Module Complete" : "Next Question"}</button></div></section>
     <section className="notes-card"><div className="section-label">Personal Study Notes</div><div><h2>Weak-Area Notes</h2><p>Use this section as your interview preparation worksheet. Notes save in this browser.</p></div><textarea ref={notesRef} value={notes} onChange={e => setNotes(e.target.value)} /><div className="actions"><button className="ghost" onClick={() => setNotes(defaults)}>Reset Notes</button><button onClick={addMissesToNotes}>Add Missed Areas</button></div>{missed.length > 0 && <div className="missed"><strong>Missed this round:</strong> {missed.join(", ")}</div>}</section>
