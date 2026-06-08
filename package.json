@@ -10,7 +10,8 @@
     "audit:app": "tsx scripts/audit.ts . --out=artifacts/audit-report.json",
     "audit:firebreak": "tsx scripts/audit.ts . --modules=firebreak.integrity --out=artifacts/audit-firebreak.json",
     "audit:runthrough": "tsx scripts/no-man-left-behind-audit.ts",
-    "audit:complete": "npm run build && npm run audit:app && npm run audit:runthrough",
+    "audit:grading": "tsx scripts/grading-idempotency-audit.ts",
+    "audit:complete": "npm run build && npm run audit:app && npm run audit:runthrough && npm run audit:grading",
     "audit:routes": "tsx scripts/audit.ts . --modules=routing.empty-values --out=artifacts/audit-routes.json",
     "audit:ui": "tsx scripts/audit.ts . --modules=ui.black-screen-guards --out=artifacts/audit-ui.json",
     "audit:security": "tsx scripts/audit.ts . --modules=security.secret-scan --out=artifacts/audit-security.json"
