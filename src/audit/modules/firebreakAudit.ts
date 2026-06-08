@@ -35,6 +35,7 @@ export const firebreakAudit: AuditModule = {
       'src/audit/types.ts',
       'src/audit/utils.ts',
       'scripts/audit.ts',
+      'scripts/no-man-left-behind-audit.ts',
     ];
 
     for (const rel of requiredFiles) {
@@ -65,13 +66,13 @@ export const firebreakAudit: AuditModule = {
         });
       } else {
         const scripts = pkg.scripts ?? {};
-        for (const script of ['dev', 'build', 'audit:app', 'audit:firebreak']) {
+        for (const script of ['dev', 'build', 'audit:app', 'audit:firebreak', 'audit:runthrough', 'audit:complete']) {
           if (!scripts[script]) {
             issues.push({
               id: `firebreak.script.${script}.missing`,
               title: `Missing npm script: ${script}`,
               message: `package.json should expose "${script}" so local checks are repeatable.`,
-              severity: script === 'audit:firebreak' ? 'error' as const : 'warning' as const,
+              severity: ['audit:firebreak', 'audit:runthrough', 'audit:complete'].includes(script) ? 'error' as const : 'warning' as const,
               file: 'package.json',
               fix: `Add a stable "${script}" script.`,
             });
@@ -156,7 +157,7 @@ export const firebreakAudit: AuditModule = {
       moduleName: this.name,
       startedAt,
       issues,
-      summary: 'Firebreak validates the audit harness and the app shell before accepting a perfect score.',
+      summary: 'Firebreak validates the audit harness, app shell, and browser run-through audit before accepting a perfect score.',
     });
   },
 };
